@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ClusterViz - Hajji Achraf</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&family=Montserrat:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="icon" href="{{ url_for('static', filename='img/favicon.ico') }}">
+    <script src="https://cdn.plot.ly/plotly-2.14.0.min.js"></script>
+</head>
+<body>
+    <div class="background-pattern"></div>
+    
+    <!-- Barre de navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <div class="logo-container">
+                    <span class="logo-text">HA</span>
+                </div>
+                <span class="brand-text">ClusterViz</span>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <i class="fas fa-bars"></i>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#" id="help-btn">
+                            <i class="fas fa-question-circle"></i> Guide
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" id="about-btn">
+                            <i class="fas fa-info-circle"></i> À propos
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <!-- Guide d'étapes (Progress Stepper) -->
+        <div class="progress-stepper">
+            <div class="step active" id="step-1">
+                <div class="step-circle">1</div>
+                <div class="step-label">Import des données</div>
+            </div>
+            <div class="step-line"></div>
+            <div class="step" id="step-2">
+                <div class="step-circle">2</div>
+                <div class="step-label">Configuration</div>
+            </div>
+            <div class="step-line"></div>
+            <div class="step" id="step-3">
+                <div class="step-circle">3</div>
+                <div class="step-label">Analyse</div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-10 offset-md-1">
+                <div class="app-title text-center mb-4">
+                    <h1>Visualisation de Clustering</h1>
+                    <p class="subtitle">Explorez vos données à travers des algorithmes de clustering</p>
+                    <div class="title-decoration">
+                        <span></span>
+                        <i class="fas fa-chart-scatter"></i>
+                        <span></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Disposition verticale des boxes -->
+        <div class="row">
+            <div class="col-lg-10 offset-lg-1">
+                <!-- 1. Importation des données -->
+                <div class="card mb-4 import-card">
+                    <div class="card-header">
+                        <h4><i class="fas fa-file-import me-2"></i>1. Importation des données</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div id="file-upload-area" class="mb-3">
+                                    <div class="upload-icon mb-3">
+                                        <i class="fas fa-cloud-upload-alt"></i>
+                                    </div>
+                                    <h5>Importer un fichier CSV</h5>
+                                    <input class="form-control" type="file" id="file-input" accept=".csv" hidden>
+                                    <button class="btn btn-outline-primary mt-2" onclick="document.getElementById('file-input').click()">
+                                        <i class="fas fa-file-csv me-2"></i>Sélectionner un fichier
+                                    </button>
+                                    <p class="text-muted mt-2"><small>Glissez-déposez ou cliquez pour sélectionner</small></p>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="text-center mb-3">
+                                    <h5>Pas de données?</h5>
+                                    <p class="text-muted">Générez un exemple pour tester l'application</p>
+                                    <button id="generate-sample-btn" class="btn btn-primary">
+                                        <i class="fas fa-magic me-2"></i>Générer un exemple
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div id="data-preview" class="mt-3" style="display: none;">
+                            <h5>Aperçu des données <span class="data-badge" id="data-count-badge"></span></h5>
+                            <div class="table-responsive">
+                                <table id="preview-table" class="table table-sm table-striped">
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 2. Options de clustering -->
+                <div id="clustering-options" class="card mb-4 options-card" style="display: none;">
+                    <div class="card-header">
+                        <h4><i class="fas fa-cogs me-2"></i>2. Options de clustering</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Méthode de clustering</label>
+                                    <div class="method-selector">
+                                        <div class="method-option">
+                                            <input class="form-check-input" type="radio" name="clusteringMethod" id="kmeans" checked>
+                                            <label class="form-check-label" for="kmeans">
+                                                <i class="fas fa-braille"></i>
+                                                <span>K-Means</span>
+                                            </label>
+                                        </div>
+                                        <div class="method-option">
+                                            <input class="form-check-input" type="radio" name="clusteringMethod" id="hierarchical">
+                                            <label class="form-check-label" for="hierarchical">
+                                                <i class="fas fa-project-diagram"></i>
+                                                <span>Hiérarchique</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="n-clusters" class="form-label">Nombre de clusters</label>
+                                    <div class="d-flex align-items-center">
+                                        <input type="number" class="form-control me-2" id="n-clusters" min="2" max="10" value="3">
+                                        <button id="find-optimal-k" class="btn btn-sm btn-light" title="Trouver le nombre optimal de clusters">
+                                            <i class="fas fa-magic"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div id="kmeans-options" class="mb-3">
+                                    <label for="distance-metric" class="form-label">Métrique de distance</label>
+                                    <select class="form-select" id="distance-metric">
+                                        <option value="Euclidean">Euclidienne</option>
+                                        <option value="Manhattan">Manhattan</option>
+                                        <option value="Cosine">Cosinus</option>
+                                    </select>
+                                </div>
+                                
+                                <div id="hierarchical-options" class="mb-3" style="display: none;">
+                                    <label for="linkage-method" class="form-label">Méthode de liaison</label>
+                                    <select class="form-select" id="linkage-method">
+                                        <option value="ward">Ward</option>
+                                        <option value="single">Simple</option>
+                                        <option value="complete">Complète</option>
+                                        <option value="average">Moyenne</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Dimensions pour la visualisation</label>
+                                    <div class="dimension-selectors">
+                                        <div class="dimension-x mb-2">
+                                            <span class="axis-label">X</span>
+                                            <select class="form-select" id="dimension-x"></select>
+                                        </div>
+                                        <div class="dimension-y">
+                                            <span class="axis-label">Y</span>
+                                            <select class="form-select" id="dimension-y"></select>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="d-grid mt-4">
+                                    <button id="run-clustering" class="btn btn-primary">
+                                        <i class="fas fa-play me-2"></i>Exécuter le clustering
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 3. Visualisation -->
+                <div class="card mb-4 visualization-card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h4><i class="fas fa-chart-scatter me-2"></i>3. Visualisation</h4>
+                        <div class="btn-group" role="group" id="view-controls" style="display: none;">
+                            <button type="button" class="btn btn-sm btn-outline-primary active" id="view-plot">
+                                <i class="fas fa-chart-scatter me-1"></i> Graphique
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-primary" id="view-dendrogram">
+                                <i class="fas fa-project-diagram me-1"></i> Dendrogramme
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div id="visualization-container" class="text-center">
+                            <!-- Loading spinner -->
+                            <div id="loading" style="display: none;">
+                                <div class="spinner">
+                                    <div class="double-bounce1"></div>
+                                    <div class="double-bounce2"></div>
+                                </div>
+                                <p>Calcul en cours...</p>
+                            </div>
+                            
+                            <!-- Welcome message -->
+                            <div id="welcome-message">
+                                <div class="welcome-icon">
+                                    <i class="fas fa-chart-pie"></i>
+                                </div>
+                                <h3>Bienvenue sur ClusterViz</h3>
+                                <p>Découvrez des modèles cachés dans vos données grâce aux algorithmes de clustering</p>
+                                <p class="text-muted">Commencez par importer vos données ou générer un exemple</p>
+                            </div>
+                            
+                            <div id="plot-area" style="display: none;">
+                                <div id="plot-container" style="width: 100%; height: 500px;"></div>
+                            </div>
+                            
+                            <div id="dendrogram-area" style="display: none;" class="mb-4">
+                                <div class="dendro-header d-flex justify-content-between align-items-center mb-2">
+                                    <h5>Dendrogramme du Clustering Hiérarchique</h5>
+                                    <div class="dendro-tools">
+                                        <span class="badge bg-light text-dark">
+                                            <i class="fas fa-info-circle me-1"></i>Utilisez la molette pour zoomer
+                                        </span>
+                                    </div>
+                                </div>
+                                <div id="dendrogram-container" style="width: 100%; height: 700px;">
+                                    <!-- Le dendrogramme sera ajouté ici par JavaScript -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 4. Résultats -->
+                <div id="results-card" class="card results-card" style="display: none;">
+                    <div class="card-header">
+                        <h4><i class="fas fa-chart-pie me-2"></i>4. Résultats</h4>
+                    </div>
+                    <div class="card-body">
+                        <div id="cluster-stats" class="row"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal du Guide -->
+    <div class="modal fade" id="guideModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Guide d'utilisation</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="guide-section">
+                        <h4><i class="fas fa-file-import me-2"></i>1. Importation des données</h4>
+                        <p>Pour commencer votre analyse, vous avez besoin de données. Vous pouvez :</p>
+                        <ul>
+                            <li><strong>Importer un fichier CSV</strong> contenant vos propres données</li>
+                            <li><strong>Générer un exemple</strong> si vous n'avez pas de données à portée de main</li>
+                        </ul>
+                        <div class="guide-tip">
+                            <i class="fas fa-lightbulb"></i>
+                            <div>
+                                <strong>Astuce:</strong> Assurez-vous que vos données sont propres et ne contiennent pas de valeurs manquantes.
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="guide-section">
+                        <h4><i class="fas fa-cogs me-2"></i>2. Configuration du clustering</h4>
+                        <p>Une fois vos données importées, vous pouvez configurer le processus de clustering :</p>
+                        <ul>
+                            <li><strong>Méthode de clustering:</strong> K-Means ou Hiérarchique</li>
+                            <li><strong>Nombre de clusters:</strong> Définissez combien de groupes vous souhaitez identifier</li>
+                            <li><strong>Dimensions:</strong> Sélectionnez les colonnes à utiliser pour la visualisation</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="guide-section">
+                        <h4><i class="fas fa-chart-pie me-2"></i>3. Analyse des résultats</h4>
+                        <p>Après l'exécution du clustering, vous pouvez explorer les résultats :</p>
+                        <ul>
+                            <li><strong>Visualisation graphique:</strong> Les points sont colorés selon leur cluster</li>
+                            <li><strong>Dendrogramme:</strong> Pour le clustering hiérarchique</li>
+                            <li><strong>Statistiques:</strong> Nombre et proportion de points dans chaque cluster</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal À propos -->
+    <div class="modal fade" id="aboutModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">À propos de ClusterViz</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="text-center mb-4">
+                        <img src="{{ url_for('static', filename='img/profile.jpg') }}" alt="Hajji Achraf" class="profile-image" width="200" height="200">
+                        <h4 class="mt-3">Hajji Achraf</h4>
+                        <p class="text-muted">Analyste Quantitatif & Data Scientist</p>
+                    </div>
+                    
+                    <p>ClusterViz est un outil d'analyse de données permettant de visualiser efficacement les résultats d'algorithmes de clustering.</p>
+                    
+                    <p>Ce projet a été développé pour démocratiser l'accès aux techniques d'analyse de données, en proposant une interface simple mais puissante.</p>
+                    
+                    <div class="about-contact mt-4">
+                        <h5>Contact</h5>
+                        <p><i class="fas fa-envelope me-2"></i> achraf.hajji.45@edu.uiz.ac.ma</p>
+                        <p><i class="fas fa-phone me-2"></i> +212 608 031 144</p>
+                        <div class="social-links">
+                            <a href="https://www.linkedin.com/in/achraf-hajji-a271ab241/" class="social-link" target="_blank"><i class="fab fa-linkedin"></i></a>
+                            <a href="https://github.com/hajji-achraf" class="social-link" target="_blank"><i class="fab fa-github"></i></a>
+                            <a href="https://achraf-hajji-portfolio.vercel.app/" class="social-link" target="_blank"><i class="fas fa-globe"></i></a>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-4 mb-4">
+                    <div class="d-flex">
+                        <div class="me-3">
+                            <img src="{{ url_for('static', filename='img/profile.jpg') }}" alt="Hajji Achraf" class="profile-image" width="200" height="200">
+                        </div>
+                        <div>
+                            <h5>ClusterViz</h5>
+                            <p class="text-muted small mb-2">Par Hajji Achraf</p>
+                        </div>
+                    </div>
+                    <p class="mt-2">Outil de visualisation de clustering pour la découverte de modèles dans les données.</p>
+                </div>
+                
+                <div class="col-md-2 offset-md-1 mb-4">
+                    <h5>Projet</h5>
+                    <ul class="nav flex-column">
+                        <li class="nav-item mb-2"><a href="#" class="nav-link p-0 text-muted">Documentation</a></li>
+                        <li class="nav-item mb-2"><a href="#" class="nav-link p-0 text-muted">Guide</a></li>
+                    </ul>
+                </div>
+                
+                <div class="col-md-2 mb-4">
+                    <h5>Ressources</h5>
+                    <ul class="nav flex-column">
+                        <li class="nav-item mb-2"><a href="https://github.com/hajji-achraf" class="nav-link p-0 text-muted">GitHub</a></li>
+                        <li class="nav-item mb-2"><a href="#" class="nav-link p-0 text-muted">Rapport</a></li>
+                    </ul>
+                </div>
+                
+                <div class="col-md-2 mb-4">
+                    <h5>Contact</h5>
+                    <div class="footer-social-links">
+                        <a href="https://www.linkedin.com/in/achraf-hajji-a271ab241/" class="footer-social-link" target="_blank">
+                            <i class="fab fa-linkedin"></i>
+                        </a>
+                        <a href="https://github.com/hajji-achraf" class="footer-social-link" target="_blank">
+                            <i class="fab fa-github"></i>
+                        </a>
+                        <a href="mailto:achraf.hajji.45@edu.uiz.ac.ma" class="footer-social-link">
+                            <i class="fas fa-envelope"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="border-top pt-3 mt-3 text-center">
+                <p class="text-muted">© 2023 ClusterViz | Open source sous licence MIT</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
